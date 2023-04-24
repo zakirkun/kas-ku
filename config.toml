@@ -1,0 +1,8 @@
+PORT="9000"
+ENVIROMENT="development"
+
+DB_USER="kasku"
+DB_PASS="kasku123"
+DB_NAME="kasku_db"
+DB_PORT="3306"
+DB_HOST="localhost"
