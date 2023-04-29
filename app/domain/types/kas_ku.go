@@ -18,5 +18,13 @@ type UsersActivationRequest struct {
 }
 
 type UsersActivationResponse struct {
-	UserID int `json:"user_id"`
+	UserID int    `json:"user_id"`
+	Token  string `json:"token"`
+	Type   string `json:"type"`
+}
+
+type PinActivationRequest struct {
+	PIN    string `json:"pin"`
+	UserID int
+	Email  string
 }

@@ -4,6 +4,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"sync"
+	"time"
+
+	"github.com/zakirkun/kas-ku/config"
+
+	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/zakirkun/kas-ku/app/domain/contracts"
 	"github.com/zakirkun/kas-ku/app/domain/models"
@@ -18,6 +23,27 @@ type usersServicesCtx struct {
 
 func NewUsersServices(repo contracts.KasKuUsersRepository) contracts.KasKuUsersServices {
 	return usersServicesCtx{Repository: repo, Mutex: &sync.Mutex{}}
+}
+
+func (s usersServicesCtx) ActivationPin(request types.PinActivationRequest) (error, bool) {
+	// lock go routine
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	dataUsers := s.Repository.FindUsersByEmail(request.Email)
+	if dataUsers == false {
+		return errors.New("account not found"), false
+	}
+
+	updateUsers := models.User{
+		Pin: request.PIN,
+	}
+
+	if err := s.Repository.UpdateUsers(request.UserID, updateUsers); err != nil {
+		return errors.New("internal errors"), false
+	}
+
+	return nil, true
 }
 
 func (s usersServicesCtx) ActivationUsers(request types.UsersActivationRequest) (error, *types.UsersActivationResponse) {
@@ -44,7 +70,20 @@ func (s usersServicesCtx) ActivationUsers(request types.UsersActivationRequest) 
 		return errors.New("internal errors"), nil
 	}
 
-	return nil, &types.UsersActivationResponse{UserID: dataUsers.UserID}
+	claims := &types.UsersClaims{
+		dataUsers.UserID,
+		dataUsers.Email,
+		dataUsers.IsActive,
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	t, _ := token.SignedString([]byte(config.GetString("JWT_SECRET")))
+
+	return nil, &types.UsersActivationResponse{UserID: dataUsers.UserID, Type: "Bearer ", Token: t}
 }
 
 func (s usersServicesCtx) RegisterUsers(request types.UsersRegisterRequest) (error, *types.UsersRegisterResponse) {

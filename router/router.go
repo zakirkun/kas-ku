@@ -19,6 +19,12 @@ func RegisterRouter(e *echo.Echo, db *gorm.DB) {
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
 
+	// CORS
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
+	}))
+
 	// repository
 	userRepository := repository.NewUsersRepository(db)
 
@@ -36,6 +42,12 @@ func RegisterRouter(e *echo.Echo, db *gorm.DB) {
 
 	v1.POST("/register", userDelivery.Register)
 	v1.POST("/activation", userDelivery.Activation)
+
+	app := v1.Group("/app")
+	{
+		app.Use(delivery.VerifyAccess())
+		app.POST("/set-pin", userDelivery.SetPIN)
+	}
 }
 
 func Ping(c echo.Context) error {

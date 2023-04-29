@@ -17,9 +17,11 @@ type KasKuUsersRepository interface {
 type KasKuUsersServices interface {
 	RegisterUsers(request types.UsersRegisterRequest) (error, *types.UsersRegisterResponse)
 	ActivationUsers(request types.UsersActivationRequest) (error, *types.UsersActivationResponse)
+	ActivationPin(request types.PinActivationRequest) (error, bool)
 }
 
 type KasKuUsersDelivery interface {
 	Register(e echo.Context) error
 	Activation(e echo.Context) error
+	SetPIN(e echo.Context) error
 }
